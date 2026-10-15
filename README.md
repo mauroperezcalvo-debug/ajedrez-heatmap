@@ -29,6 +29,13 @@ El servidor tiene que servir `.wasm` como `application/wasm` (Netlify lo hace so
 
 Por cada jugada tuya: pérdida = evaluación antes − evaluación después (en centipeones, desde tu lado).
 Los mates cuentan como ±1000. Se guardan las pérdidas desde 50 cp; el umbral se elige en pantalla.
+## Nivel estimado
+
+Por cada bando y partida se calcula la pérdida media por jugada (ACPL), sin contar las primeras 5 jugadas
+y con un tope de 500 cp por jugada. El Elo sale de la fórmula empírica `3100·e^(−0,01·ACPL)`, redondeada a 50.
+Es una referencia: depende de la profundidad elegida y de la cantidad de jugadas. Si el PGN trae
+`WhiteElo`/`BlackElo`, se muestra al lado para comparar.
+
 ## Tipos de error
 
 Cada error se clasifica con esta prioridad (heurística a partir de las jugadas de Stockfish, no es exacta):

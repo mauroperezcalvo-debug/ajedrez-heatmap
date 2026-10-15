@@ -48,6 +48,14 @@ svg { width: 100%; height: auto; display: block; border-radius: 6px; }
 #lista { margin: 0; padding-left: 24px; max-height: 520px; overflow: auto; }
 #lista li { margin-bottom: 6px; }
 #lista button { background: none; color: var(--acento); padding: 0; text-align: left; }
+#nivel { border-top: 1px solid var(--borde); margin-top: 20px; padding-top: 16px; }
+.tabla-scroll { overflow-x: auto; max-height: 360px; overflow-y: auto; }
+#nivelTabla { width: 100%; border-collapse: collapse; font-size: .9rem; }
+#nivelTabla th, #nivelTabla td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--borde); vertical-align: top; }
+#nivelTabla th { position: sticky; top: 0; background: var(--tarjeta); }
+#nivelTabla .yo { font-weight: 600; }
+#nivelTabla .sub { display: block; color: var(--suave); font-weight: 400; font-size: .8rem; }
+.nota { font-size: .8rem; color: var(--suave); }
 footer { max-width: 1100px; margin: 0 auto; padding: 8px 16px 32px; font-size: .85rem; color: var(--suave); }
 footer a { color: var(--acento); }
 .tag { font-size: .75rem; color: #fff; border-radius: 4px; padding: 0 5px; margin-left: 4px; }

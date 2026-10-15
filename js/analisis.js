@@ -46,6 +46,7 @@ export function parsearPartida(texto, id, usuarios) {
     negras: cab.Black || '?',
     resultado: cab.Result || '*',
     fecha: cab.Date || '',
+    eloPGN: { w: parseInt(cab.WhiteElo, 10) || null, b: parseInt(cab.BlackElo, 10) || null },
     lados,
     jugadas,
     fens: [jugadas[0].before, ...jugadas.map((m) => m.after)],
@@ -87,7 +88,33 @@ export async function analizarPartida(partida, motor, profundidad, alPosicion, c
 
   partida.evals = evals;
   partida.errores = construirErrores(partida);
+  partida.calidad = calcularCalidad(partida);
   return true;
+}
+
+// ---------- Nivel estimado ----------
+
+const PERDIDA_TOPE = 500; // una jugada no suma más que esto al promedio
+const JUGADAS_DE_LIBRO = 5; // las primeras jugadas de cada bando no cuentan
+
+// Elo aproximado a partir de la pérdida media por jugada (ACPL):
+// fórmula empírica Elo ≈ 3100·e^(−0,01·ACPL). Es una referencia, no una medición:
+// depende de la profundidad usada y de pocas jugadas por partida.
+export function estimarElo(acpl) {
+  return Math.round((3100 * Math.exp(-0.01 * acpl)) / 50) * 50;
+}
+
+// Suma de pérdidas y cantidad de jugadas por color; se juntan después entre partidas.
+function calcularCalidad(partida) {
+  const q = { w: { suma: 0, n: 0 }, b: { suma: 0, n: 0 } };
+  partida.jugadas.forEach((m, i) => {
+    if (Math.floor(i / 2) + 1 <= JUGADAS_DE_LIBRO) return;
+    const signo = m.color === 'w' ? 1 : -1;
+    const perdida = Math.max(0, (partida.evals[i].cp - partida.evals[i + 1].cp) * signo);
+    q[m.color].suma += Math.min(PERDIDA_TOPE, perdida);
+    q[m.color].n++;
+  });
+  return q;
 }
 
 // Jugadas del usuario que perdieron al menos PERDIDA_MINIMA centipeones.

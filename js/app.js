@@ -1,7 +1,7 @@
 import { Chess } from '../vendor/chess.js';
 import { Motor } from './motor.js';
 import { vaciar } from './cache.js';
-import { dividirPGN, parsearPartida, analizarPartida } from './analisis.js';
+import { dividirPGN, parsearPartida, analizarPartida, estimarElo } from './analisis.js';
 import { dibujarTablero } from './tablero.js';
 
 const $ = (id) => document.getElementById(id);
@@ -129,6 +129,65 @@ function erroresFiltrados(paraCausas = false) {
   return out;
 }
 
+// ---------- Nivel estimado ----------
+
+const MIN_JUGADAS_NIVEL = 5;
+
+function celdaNivel(p, color) {
+  const td = document.createElement('td');
+  const nombre = color === 'w' ? p.blancas : p.negras;
+  const q = p.calidad[color];
+  if (p.lados.has(color) && p.lados.size === 1) td.className = 'yo';
+  td.append(nombre);
+  const sub = document.createElement('span');
+  sub.className = 'sub';
+  if (q.n < MIN_JUGADAS_NIVEL) {
+    sub.textContent = 'partida muy corta';
+  } else {
+    const acpl = q.suma / q.n;
+    sub.textContent = `ACPL ${Math.round(acpl)} · ≈ ${estimarElo(acpl)}` + (p.eloPGN[color] ? ` (PGN: ${p.eloPGN[color]})` : '');
+  }
+  td.appendChild(sub);
+  return td;
+}
+
+function dibujarNivel() {
+  const cont = $('nivel');
+  cont.hidden = partidas.length === 0;
+  if (partidas.length === 0) return;
+
+  // promedio sobre tus jugadas (respeta el filtro de color)
+  const color = $('fColor').value;
+  let suma = 0;
+  let n = 0;
+  let cuenta = 0;
+  for (const p of partidas) {
+    let aporto = false;
+    for (const c of ['w', 'b']) {
+      if (!p.lados.has(c) || (color !== 'todos' && color !== c)) continue;
+      suma += p.calidad[c].suma;
+      n += p.calidad[c].n;
+      aporto = true;
+    }
+    if (aporto) cuenta++;
+  }
+  if (n < MIN_JUGADAS_NIVEL) {
+    $('nivelResumen').textContent = 'Todavía no hay jugadas suficientes para estimar tu nivel.';
+  } else {
+    const acpl = suma / n;
+    $('nivelResumen').textContent = `Tu nivel estimado: ≈ ${estimarElo(acpl)} Elo (pérdida media de ${Math.round(acpl)} centipeones por jugada, sobre ${n} jugadas de ${cuenta} partidas).`;
+  }
+
+  const filas = partidas.map((p) => {
+    const tr = document.createElement('tr');
+    const t = document.createElement('td');
+    t.textContent = `${p.fecha && !p.fecha.includes('?') ? p.fecha : 'sin fecha'} · ${p.resultado}`;
+    tr.append(t, celdaNivel(p, 'w'), celdaNivel(p, 'b'));
+    return tr;
+  });
+  $('nivelTabla').tBodies[0].replaceChildren(...filas);
+}
+
 // ---------- Causas de los errores ----------
 
 const TIPOS = {
@@ -225,6 +284,7 @@ function actualizar() {
   });
 
   dibujarCausas();
+  dibujarNivel();
 
   const jugadas = partidas.reduce((s, p) => s + p.jugadas.filter((m) => p.lados.has(m.color)).length, 0);
   const colgadas = errores.filter((e) => e.colgada).length;

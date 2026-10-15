@@ -84,6 +84,18 @@
         </div>
       </div>
 
+      <div id="nivel" hidden>
+        <h2>Nivel estimado</h2>
+        <p id="nivelResumen"></p>
+        <div class="tabla-scroll">
+          <table id="nivelTabla">
+            <thead><tr><th>Partida</th><th>Blancas</th><th>Negras</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="nota">El Elo se estima a partir de la pérdida media por jugada (ACPL) según Stockfish, sin contar las primeras 5 jugadas de cada bando. Es una referencia aproximada: con pocas partidas o poca profundidad puede errar por varios cientos de puntos.</p>
+      </div>
+
       <div id="detalle" hidden>
         <h2>Posición</h2>
         <div class="tableros">
