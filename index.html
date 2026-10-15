@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Puntos ciegos de ajedrez</title>
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header>
+    <h1>Puntos ciegos</h1>
+    <p>Subí tus partidas en PGN y Stockfish marca en el tablero las casillas donde más errores cometés. Todo se analiza en tu navegador: las partidas no se envían a ningún servidor.</p>
+  </header>
+
+  <main>
+    <section id="panel">
+      <label>Tu usuario (como figura en el PGN; varios separados por coma)
+        <input id="usuario" type="text" placeholder="ej: mauroperez, mperez88">
+      </label>
+      <label>Archivos PGN
+        <input id="archivos" type="file" accept=".pgn,.txt" multiple>
+      </label>
+      <label>…o pegá el PGN acá
+        <textarea id="pegado" rows="4"></textarea>
+      </label>
+      <label>Profundidad de Stockfish
+        <select id="prof">
+          <option value="10">10 (rápido)</option>
+          <option value="12" selected>12</option>
+          <option value="14">14</option>
+          <option value="16">16 (lento)</option>
+        </select>
+      </label>
+      <div class="botones">
+        <button id="analizar" type="button">Analizar</button>
+        <button id="cancelar" type="button" hidden>Cancelar</button>
+        <button id="limpiar" type="button" class="secundario">Vaciar caché</button>
+      </div>
+      <progress id="progreso" value="0" max="1" hidden></progress>
+      <p id="estado" role="status"></p>
+    </section>
+
+    <section id="resultados" hidden>
+      <div class="filtros">
+        <label>Mostrar
+          <select id="modo">
+            <option value="destino">Casilla del error (donde fue la pieza)</option>
+            <option value="colgadas">Piezas colgadas (casilla de la pieza perdida)</option>
+          </select>
+        </label>
+        <label>Error desde
+          <select id="umbral">
+            <option value="100">Imprecisión (−1,0)</option>
+            <option value="200" selected>Error (−2,0)</option>
+            <option value="300">Blunder (−3,0)</option>
+          </select>
+        </label>
+        <label>Color
+          <select id="fColor"><option value="todos">Ambos</option><option value="w">Blancas</option><option value="b">Negras</option></select>
+        </label>
+        <label>Fase
+          <select id="fFase"><option value="todas">Toda la partida</option><option value="ap">Apertura (1–10)</option><option value="me">Medio juego (11–30)</option><option value="fi">Final (31+)</option></select>
+        </label>
+        <label>Pieza movida
+          <select id="fPieza"><option value="todas">Todas</option><option value="p">Peón</option><option value="n">Caballo</option><option value="b">Alfil</option><option value="r">Torre</option><option value="q">Dama</option><option value="k">Rey</option></select>
+        </label>
+        <label class="check"><input id="invertir" type="checkbox"> Ver desde las negras</label>
+      </div>
+
+      <p id="resumen"></p>
+
+      <div class="tableros">
+        <div>
+          <svg id="mapa" role="img" aria-label="Mapa de calor de errores"></svg>
+          <div class="leyenda"><span>pocos</span><div class="barra"></div><span>muchos</span></div>
+        </div>
+        <div>
+          <h2 id="tituloLista">Peores jugadas</h2>
+          <ol id="lista"></ol>
+        </div>
+      </div>
+
+      <div id="detalle" hidden>
+        <h2>Posición</h2>
+        <div class="tableros">
+          <svg id="mapaDetalle" role="img" aria-label="Posición antes del error"></svg>
+          <div>
+            <p id="detalleTexto"></p>
+            <button id="profundizar" type="button">Profundizar con Stockfish (prof. 20)</button>
+            <p id="profundoTexto"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Software libre bajo licencia GPLv3. <a href="https://github.com/mauroperezcalvo-debug/ajedrez-heatmap">Código fuente</a>. Usa <a href="https://github.com/nmrugg/stockfish.js">Stockfish.js</a> (GPLv3) y <a href="https://github.com/jhlywa/chess.js">chess.js</a> (BSD).</p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
