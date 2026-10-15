@@ -50,5 +50,20 @@ svg { width: 100%; height: auto; display: block; border-radius: 6px; }
 #lista button { background: none; color: var(--acento); padding: 0; text-align: left; }
 footer { max-width: 1100px; margin: 0 auto; padding: 8px 16px 32px; font-size: .85rem; color: var(--suave); }
 footer a { color: var(--acento); }
-.tag { font-size: .75rem; background: #c62828; color: #fff; border-radius: 4px; padding: 0 5px; margin-left: 4px; }
+.tag { font-size: .75rem; color: #fff; border-radius: 4px; padding: 0 5px; margin-left: 4px; }
+.t-colgada { background: #c62828; }
+.t-tactica { background: #ef6c00; }
+.t-apertura { background: #1565c0; }
+.t-medio { background: #6a1b9a; }
+.t-final { background: #2e7d32; }
+
+#causas { margin: 8px 0 20px; }
+#causas .frase { font-weight: 600; margin: 0 0 8px; }
+.causa { display: grid; grid-template-columns: 170px 1fr 80px; align-items: center; gap: 10px; width: 100%; padding: 4px 8px; margin-bottom: 4px; background: none; color: var(--texto); border: 1px solid transparent; border-radius: 6px; text-align: left; }
+.causa:hover { border-color: var(--borde); }
+.causa.activa { border-color: var(--acento); background: var(--fondo); }
+.causa .pista { height: 12px; background: var(--borde); border-radius: 6px; overflow: hidden; }
+.causa .relleno { display: block; height: 100%; }
+.causa .cifra { text-align: right; font-variant-numeric: tabular-nums; color: var(--suave); }
+@media (max-width: 520px) { .causa { grid-template-columns: 110px 1fr 70px; } }
 #detalle { border-top: 1px solid var(--borde); margin-top: 20px; padding-top: 16px; }

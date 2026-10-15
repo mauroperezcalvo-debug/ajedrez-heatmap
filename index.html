@@ -64,10 +64,14 @@
         <label>Pieza movida
           <select id="fPieza"><option value="todas">Todas</option><option value="p">Peón</option><option value="n">Caballo</option><option value="b">Alfil</option><option value="r">Torre</option><option value="q">Dama</option><option value="k">Rey</option></select>
         </label>
+        <label>Tipo de error
+          <select id="fTipo"><option value="todos">Todos</option><option value="colgada">Pieza colgada</option><option value="tactica">Táctica</option><option value="apertura">Error de apertura</option><option value="medio">Medio juego</option><option value="final">Final mal jugado</option></select>
+        </label>
         <label class="check"><input id="invertir" type="checkbox"> Ver desde las negras</label>
       </div>
 
       <p id="resumen"></p>
+      <div id="causas" hidden></div>
 
       <div class="tableros">
         <div>

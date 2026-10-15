@@ -106,12 +106,14 @@ async function analizar() {
 
 // ---------- Mapa de calor ----------
 
-function erroresFiltrados() {
+// paraCausas: ignora los filtros de tipo y de modo, para que los porcentajes sumen 100%.
+function erroresFiltrados(paraCausas = false) {
   const umbral = +$('umbral').value;
   const color = $('fColor').value;
   const fase = $('fFase').value;
   const pieza = $('fPieza').value;
   const modo = $('modo').value;
+  const tipo = $('fTipo').value;
   const out = [];
   for (const p of partidas) {
     for (const e of p.errores) {
@@ -119,11 +121,78 @@ function erroresFiltrados() {
       if (color !== 'todos' && e.color !== color) continue;
       if (fase !== 'todas' && (e.num < FASES[fase][0] || e.num > FASES[fase][1])) continue;
       if (pieza !== 'todas' && e.pieza !== pieza) continue;
-      if (modo === 'colgadas' && !e.colgada) continue;
+      if (!paraCausas && modo === 'colgadas' && !e.colgada) continue;
+      if (!paraCausas && tipo !== 'todos' && e.tipo !== tipo) continue;
       out.push(e);
     }
   }
   return out;
+}
+
+// ---------- Causas de los errores ----------
+
+const TIPOS = {
+  colgada: { nombre: 'Pieza colgada', corto: 'colgada', ayuda: 'El rival se la lleva gratis, sin recaptura.' },
+  tactica: { nombre: 'Táctica', corto: 'táctica', ayuda: 'Captura con recaptura, jaque o mate del rival, o una captura/jaque ganador tuyo que no jugaste.' },
+  apertura: { nombre: 'Error de apertura', corto: 'apertura', ayuda: 'Jugada floja hasta la jugada 10, sin táctica de por medio.' },
+  medio: { nombre: 'Medio juego', corto: 'medio juego', ayuda: 'Error posicional en el medio juego.' },
+  final: { nombre: 'Final mal jugado', corto: 'final', ayuda: 'Error con poco material en el tablero (sin damas ni piezas pesadas de sobra).' },
+};
+const PIEZA_PLURAL = { p: 'peones', n: 'caballos', b: 'alfiles', r: 'torres', q: 'damas', k: 'rey' };
+const PIEZA_JUGADA = { p: 'de peón', n: 'de caballo', b: 'de alfil', r: 'de torre', q: 'de dama', k: 'de rey' };
+
+function masFrecuente(valores) {
+  const cuenta = {};
+  for (const v of valores) cuenta[v] = (cuenta[v] || 0) + 1;
+  return Object.keys(cuenta).sort((a, b) => cuenta[b] - cuenta[a])[0];
+}
+
+function dibujarCausas() {
+  const errs = erroresFiltrados(true);
+  const total = errs.length;
+  const activo = $('fTipo').value;
+  const cont = $('causas');
+  cont.hidden = total === 0;
+  if (total === 0) return;
+
+  const filas = Object.keys(TIPOS).map((t) => {
+    const n = errs.filter((e) => e.tipo === t).length;
+    const pct = Math.round((100 * n) / total);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'causa' + (activo === t ? ' activa' : '');
+    b.title = TIPOS[t].ayuda;
+    const nombre = document.createElement('span');
+    nombre.textContent = TIPOS[t].nombre;
+    const pista = document.createElement('span');
+    pista.className = 'pista';
+    const relleno = document.createElement('span');
+    relleno.className = 'relleno t-' + t;
+    relleno.style.width = pct + '%';
+    pista.appendChild(relleno);
+    const cifra = document.createElement('span');
+    cifra.className = 'cifra';
+    cifra.textContent = `${n} · ${pct}%`;
+    b.append(nombre, pista, cifra);
+    b.addEventListener('click', () => {
+      $('fTipo').value = activo === t ? 'todos' : t;
+      cuadroSel = null;
+      actualizar();
+    });
+    return b;
+  });
+
+  const principal = Object.keys(TIPOS).sort((a, b) => errs.filter((e) => e.tipo === b).length - errs.filter((e) => e.tipo === a).length)[0];
+  const deEsteTipo = errs.filter((e) => e.tipo === principal);
+  const pct = Math.round((100 * deEsteTipo.length) / total);
+  let frase = `El ${pct}% de tus errores (${deEsteTipo.length} de ${total}) son de tipo «${TIPOS[principal].nombre.toLowerCase()}»`;
+  if (principal === 'colgada') frase += ', sobre todo ' + PIEZA_PLURAL[masFrecuente(deEsteTipo.map((e) => e.colgada.pieza))];
+  else frase += ', sobre todo con jugadas ' + PIEZA_JUGADA[masFrecuente(deEsteTipo.map((e) => e.pieza))];
+  const fraseEl = document.createElement('p');
+  fraseEl.className = 'frase';
+  fraseEl.textContent = frase + '.';
+
+  cont.replaceChildren(fraseEl, ...filas);
 }
 
 const casillaDe = (e) => ($('modo').value === 'colgadas' ? e.colgada.sq : e.to);
@@ -155,6 +224,8 @@ function actualizar() {
     alClick: (sq) => { cuadroSel = cuadroSel === sq ? null : sq; actualizar(); },
   });
 
+  dibujarCausas();
+
   const jugadas = partidas.reduce((s, p) => s + p.jugadas.filter((m) => p.lados.has(m.color)).length, 0);
   const colgadas = errores.filter((e) => e.colgada).length;
   $('resumen').textContent = `${partidas.length} partidas · ${jugadas} jugadas tuyas · ${errores.length} errores en el filtro (${colgadas} con pieza perdida).`;
@@ -173,12 +244,10 @@ function itemLista(e) {
   b.textContent = `${e.num}${e.color === 'w' ? '.' : '…'} ${e.san} vs ${rival} · −${(e.perdida / 100).toFixed(1)}`;
   b.addEventListener('click', () => mostrarDetalle(e));
   li.appendChild(b);
-  if (e.colgada) {
-    const tag = document.createElement('span');
-    tag.className = 'tag';
-    tag.textContent = 'pieza perdida';
-    li.appendChild(tag);
-  }
+  const tag = document.createElement('span');
+  tag.className = 'tag t-' + e.tipo;
+  tag.textContent = TIPOS[e.tipo].corto;
+  li.appendChild(tag);
   return li;
 }
 
@@ -200,7 +269,7 @@ function mostrarDetalle(e) {
   dibujarTablero($('mapaDetalle'), { fen: e.fen, invertido: e.color === 'b', flechas });
 
   const p = e.partida;
-  let txt = `${p.blancas} - ${p.negras} (${p.resultado}${p.fecha ? ', ' + p.fecha : ''}). Jugaste ${e.san} (rojo): la evaluación pasó de ${fmtEval(e.antes)} a ${fmtEval(e.despues)} desde tu punto de vista.`;
+  let txt = `Tipo: ${TIPOS[e.tipo].nombre.toLowerCase()}. ${p.blancas} - ${p.negras} (${p.resultado}${p.fecha ? ', ' + p.fecha : ''}). Jugaste ${e.san} (rojo): la evaluación pasó de ${fmtEval(e.antes)} a ${fmtEval(e.despues)} desde tu punto de vista.`;
   if (e.mejor) txt += ` Stockfish prefería ${sanDe(e.fen, e.mejor)} (verde).`;
   $('detalleTexto').textContent = txt;
   $('detalle').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -224,7 +293,7 @@ $('analizar').addEventListener('click', analizar);
 $('cancelar').addEventListener('click', () => { cancelar = true; if (motor) motor.detener(); });
 $('profundizar').addEventListener('click', profundizar);
 $('limpiar').addEventListener('click', async () => { await vaciar(); $('estado').textContent = 'Caché vaciada.'; });
-['modo', 'umbral', 'fColor', 'fFase', 'fPieza', 'invertir'].forEach((id) => {
+['modo', 'umbral', 'fColor', 'fFase', 'fPieza', 'fTipo', 'invertir'].forEach((id) => {
   $(id).addEventListener('change', () => {
     if (id === 'fColor') $('invertir').checked = $('fColor').value === 'b';
     cuadroSel = null;

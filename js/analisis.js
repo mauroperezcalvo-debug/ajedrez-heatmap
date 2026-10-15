@@ -7,6 +7,14 @@ const PERDIDA_MINIMA = 50; // por debajo de esto no se guarda como "error"
 const limitar = (cp) => Math.max(-MATE, Math.min(MATE, cp));
 const fen4 = (fen) => fen.split(' ').slice(0, 4).join(' ');
 
+// Material "pesado" (sin peones ni reyes) de ambos bandos; la posición inicial suma 62.
+const VALOR_PIEZA = { n: 3, b: 3, r: 5, q: 9 };
+function materialPesado(fen) {
+  let total = 0;
+  for (const ch of fen.split(' ')[0].toLowerCase()) total += VALOR_PIEZA[ch] || 0;
+  return total;
+}
+
 export function dividirPGN(texto) {
   const t = texto.replace(/\r\n?/g, '\n').trim();
   if (!t) return [];
@@ -95,18 +103,43 @@ function construirErrores(partida) {
     const perdida = antes - despues;
     if (perdida < PERDIDA_MINIMA) return;
 
-    // ¿La mejor respuesta del rival captura una pieza? -> pieza colgada / perdida
+    // Clasificación (en orden de prioridad):
+    //  colgada: la mejor respuesta del rival captura una pieza tuya y no podés recapturar
+    //  tactica: el rival tiene captura con recaptura, jaque o mate; o vos tenías una
+    //           captura/jaque/promoción ganadora y no la jugaste
+    //  apertura / final / medio: error "quieto", según la fase
     let colgada = null;
+    let tactica = false;
     const respuesta = evals[i + 1].best;
     if (respuesta) {
-      const rep = new Chess(m.after).moves({ verbose: true })
-        .find((x) => x.from + x.to === respuesta.slice(0, 4));
-      if (rep && rep.captured) colgada = { sq: rep.to, pieza: rep.captured };
+      const pos = new Chess(m.after);
+      const rep = pos.moves({ verbose: true }).find((x) => x.from + x.to === respuesta.slice(0, 4));
+      if (rep) {
+        if (rep.captured && !/#/.test(rep.san)) {
+          pos.move({ from: rep.from, to: rep.to, promotion: rep.promotion });
+          const recaptura = pos.moves({ verbose: true }).some((x) => x.to === rep.to && x.captured);
+          if (recaptura) tactica = true; else colgada = { sq: rep.to, pieza: rep.captured };
+        } else if (/[+#]/.test(rep.san)) {
+          tactica = true;
+        }
+      }
     }
+    if (!colgada && !tactica && evals[i].best) {
+      const mejorJugada = new Chess(m.before).moves({ verbose: true })
+        .find((x) => x.from + x.to === evals[i].best.slice(0, 4));
+      if (mejorJugada && (mejorJugada.captured || mejorJugada.promotion || /[+#]/.test(mejorJugada.san))) tactica = true;
+    }
+    const num = Math.floor(i / 2) + 1;
+    let tipo = 'medio';
+    if (colgada) tipo = 'colgada';
+    else if (tactica) tipo = 'tactica';
+    else if (num <= 10) tipo = 'apertura';
+    else if (materialPesado(m.before) <= 24) tipo = 'final';
 
     out.push({
       partida,
-      num: Math.floor(i / 2) + 1,
+      num,
+      tipo,
       color: m.color,
       san: m.san,
       from: m.from,

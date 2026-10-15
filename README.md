@@ -29,8 +29,16 @@ El servidor tiene que servir `.wasm` como `application/wasm` (Netlify lo hace so
 
 Por cada jugada tuya: pérdida = evaluación antes − evaluación después (en centipeones, desde tu lado).
 Los mates cuentan como ±1000. Se guardan las pérdidas desde 50 cp; el umbral se elige en pantalla.
-"Pieza perdida": el error es grave y la mejor respuesta del rival según Stockfish captura una pieza tuya
-(aproximación: puede ser un cambio desfavorable y no una pieza colgada pura).
+## Tipos de error
+
+Cada error se clasifica con esta prioridad (heurística a partir de las jugadas de Stockfish, no es exacta):
+
+1. **Pieza colgada**: la mejor respuesta del rival captura una pieza tuya y no podés recapturar.
+2. **Táctica**: el rival tiene una captura con recaptura, un jaque o un mate; o vos tenías una captura,
+   jaque o promoción ganadora y no la jugaste.
+3. **Error de apertura**: hasta la jugada 10, sin táctica de por medio.
+4. **Final mal jugado**: material pesado (sin peones ni reyes) de ambos bandos ≤ 24 (en la posición inicial es 62).
+5. **Medio juego**: el resto (error posicional).
 
 ## Licencia
 
